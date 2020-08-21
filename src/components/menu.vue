@@ -1,7 +1,7 @@
 <template>
   <div class="tmenu" style="width: 100%">
     <a-menu
-      :default-selected-keys="[choosed=''?choosed:'1']"
+      :default-selected-keys="[choosed]"
       :default-open-keys="['sub1']"
       mode="inline"
       theme="dark"
@@ -66,16 +66,22 @@ export default {
         Chara:'3'
       },
       tempurl:'',
-      choosed:'',
+      choosed:'1',
       rout:''
     };
   },
   beforeMount(){
     let url = this.$route.path
     let len = url.length
-    this.tempurl = url.split('/')[1]
-    this.choosed = this.list[this.tempurl]
-    console.log(this.tempurl);
+    if(len == 1){
+      this.choosed = '1';
+    }
+    else{
+      this.tempurl = url.split('/')[1]
+      this.choosed = this.list[this.tempurl]
+    }
+    // console.log(this.tempurl);
+    // console.log(this.choosed);
   },
   methods: {
     toggleCollapsed() {

@@ -3,7 +3,7 @@
     <a-button class="editable-add-btn" @click="handleAdd">
       Add
     </a-button>
-    <a-table bordered :data-source="dataSource" :columns="columns" :pagination="pagination">
+    <a-table bordered :data-source="dataSource" :columns="columns" :pagination="pagination" @change='laload()'>
       <template slot="username" slot-scope="text, record">
         <!-- {{record}} -->
         <a-input v-if="record.editable"  type="text" :value="text" @change="Changeu"></a-input>
@@ -60,18 +60,26 @@ export default {
         },
       ],
       pagination:{
+        current:1,
+        defaultCurrent:1,
         defaultPageSize:5,
-        pageSize:8
+        pageSize:8,
+        onChange: (current,size)=>{
+          console.log('current'+current);
+          this.current = current
+        }
       },
       count: 2,
       editable:false,
       uname:'',
       upwd:'',
       val:'',
-      isadd:0,
+      isadd:0,//判断是增加还是修改
       incount:0,
-      maxid:0,
+      maxid:0,//存储在数据库中的id
       tempo:0,
+      current:1,//页码
+      tempcurrent:0,
       columns: [
         {
           title: '用户名称',
@@ -95,7 +103,7 @@ export default {
   mounted() {
     console.log("没问题")
     axios({
-          url:'user/all/1/100',
+          url:'user/all/1/8',
           method:"get",
           // data:this.val
           
@@ -113,7 +121,9 @@ export default {
               }
               this.dataSource.push({key:res[i].userid,username:res[i].username,password:res[i].password,index:i,editable:false})
             }
-            
+            if(i == 8){
+              this.dataSource.push({key:'',username:'',password:'',index:'',editable:false})
+            }
             // datalist = res;
           }).catch(err => {
             // console.log(err);
@@ -121,13 +131,40 @@ export default {
           })
   },
   methods: {
-    onCellChange(key, dataIndex, value) {
-      console.log('change')
-      const dataSource = [...this.dataSource];
-      const target = dataSource.find(item => item.key === key);
-      if (target) {
-        target[dataIndex] = value;
-        this.dataSource = dataSource;
+    laload(){
+      this.pagination.current = this.current
+      if(this.tempcurrent<this.current){
+      console.log(this.current);
+      this.dataSource.pop()
+      let url = 'user/all/'+(this.current*2+1)+'/8'
+      // console.log()
+      axios({
+          url:url,
+          method:"get",
+          // data:this.val
+          
+          }).then(res => {
+            console.log("post");
+            console.log(res.data);
+            res=res.data
+            for(var i = 0;i<res.length;i++){
+              this.incount++;
+              if(parseInt(res[i].userid)>=this.maxid){
+                console.log('大');
+                console.log(this.maxid);
+                this.maxid = parseInt(res[i].userid)+1;
+              }
+              this.dataSource.push({key:res[i].userid,username:res[i].username,password:res[i].password,index:i,editable:false})
+            }
+            if(i == 8){
+              this.dataSource.push({key:'',username:'',password:'',index:'',editable:false})
+            }
+            // datalist = res;
+          }).catch(err => {
+            // console.log(err);
+            
+          })
+          this.tempcurrent = this.current;
       }
     },
     onDelete(key) {
@@ -257,21 +294,22 @@ export default {
         // console.log(err);  
         })
       }
-     
     },
     cancle(key){
-      for(let i = 0;i<this.dataSource.length;i++){
-        
-        // console.log(this.dataSource[i].key+'-----'+key);
-        var temp = this.dataSource[i].key
-        if(temp == key){
-          this.dataSource[i].editable = false;
-          this.tempo=i;
+      if(this.isadd == 1){
+        this.dataSource.shift();
+        this.isadd = 0
+      }
+      else{
+        for(let i = 0;i<this.dataSource.length;i++){
+          var temp = this.dataSource[i].key
+          if(temp == key){
+            this.dataSource[i].editable = false;
+            this.tempo=i;
+          } 
         }
-        
       }
     }
-
   },
 };
 </script>

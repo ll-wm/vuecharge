@@ -3,7 +3,7 @@
     <a-button class="editable-add-btn" @click="handleAdd">
       Add
     </a-button>
-    <a-table bordered :data-source="dataSource" :columns="columns" :pagination="pagination">
+    <a-table bordered :data-source="dataSource" :columns="columns" :pagination="pagination" @change='laload()'>
       <template slot="username" slot-scope="text, record">
         <!-- <a-input v-if=dataSource[record.index].editable  type="text" :value="text" @change="Changeu"></a-input> -->
         <a-select  v-if=record.editable :default-value=text style="width: 120px" @focus="sele">
@@ -70,8 +70,14 @@ export default {
         },
       ],
       pagination:{
+        current:1,
+        defaultCurrent:1,
         defaultPageSize:5,
-        pageSize:8
+        pageSize:8,
+        onChange: (current,size)=>{
+          console.log('current'+current);
+          this.current = current
+        }
       },
       datauser:[],//user
       datarole:[],//role
@@ -86,6 +92,8 @@ export default {
       usname:'',
       roname:'',
       tempo:0,//当前数据在数组里面的index
+      current:1,//页码
+      tempcurrent:0,
       columns: [
         {
           title: '用户名',
@@ -151,7 +159,9 @@ export default {
               
               
             }
-            
+            if(i == 8){
+              this.dataSource.push({key:'',username:'',rolename:'',index:'',editable:false})
+            }
             // datalist = res;
           }).catch(err => {
             // console.log(err);
@@ -218,7 +228,68 @@ export default {
           })
       console.log("请求数据");
     },
-
+    //懒加载数据
+    laload(){
+      this.pagination.current = this.current
+      if(this.tempcurrent<this.current){
+      console.log(this.current);
+      this.dataSource.pop()
+      let url = 'user_role/all/'+(this.current*2+1)+'/8'
+      // console.log()
+      axios({
+          url:url,
+          method:"get",
+          // data:this.val
+          
+          }).then(res => {
+            console.log("post");
+            console.log(res.data);
+            res=res.data
+            // this.dataSource = []
+            for(let i = 0;i<res.length;i++){
+              console.log(i);
+              this.incount++;
+              if(parseInt(res[i].id)>=this.maxid){
+                // console.log('大');
+                // console.log(this.maxid);
+                this.maxid = parseInt(res[i].id)+1;
+              }
+              let m = '5';
+              let n = '';
+              let p = res[i];
+              axios({
+                url:'user/findById/'+res[i].userid,
+                method:'get',
+              }).then(res=>{
+                console.log(res.data);
+                m = res.data.username;
+                console.log('m='+m);
+                axios({
+                  url:'role/findById/'+p.roleid,
+                  method:'get',
+                }).then(res=>{
+                  console.log(res);
+                  n = res.data.rolename
+                  // console.log(n);
+                  // console.log('mn');
+                  console.log(m,n,p.id,i);
+                  this.dataSource.push({key:p.id,username:m,rolename:n,index:i,editable:false})
+                })
+              })
+              
+              
+            }
+            if(i == 8){
+              this.dataSource.push({key:'',username:'',rolename:'',index:'',editable:false})
+            }
+            // datalist = res;
+          }).catch(err => {
+            // console.log(err);
+            
+          })
+          this.tempcurrent = this.current;
+      }
+    },
     //删除数据
     onDelete(key) {
       const dataSource = [...this.dataSource];
@@ -337,15 +408,21 @@ export default {
       }
     },
     cancle(key){
-      for(let i = 0;i<this.dataSource.length;i++){
+      if(this.isadd == 1){
+        this.dataSource.shift();
+        this.isadd = 0
+      }
+      else{
+        for(let i = 0;i<this.dataSource.length;i++){
         
-        // console.log(this.dataSource[i].key+'-----'+key);
-        var temp = this.dataSource[i].key
-        if(temp == key){
-          this.dataSource[i].editable = false;
-          this.tempo=i;
+          // console.log(this.dataSource[i].key+'-----'+key);
+          var temp = this.dataSource[i].key
+          if(temp == key){
+            this.dataSource[i].editable = false;
+            this.tempo=i;
+          }
+          
         }
-        
       }
     }
   },
